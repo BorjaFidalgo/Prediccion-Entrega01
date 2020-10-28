@@ -1,0 +1,154 @@
+---
+title: "Regresión y Salarios NBA"
+author: "Borja Fidalgo Martínez-Merello"
+date: "10/27/2020"
+output: html_document
+date: "`r format(Sys.time(), '%d %B %Y')`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r data, include=}
+library(dplyr)
+
+datanba <- read_csv("nba.csv")
+attach(datanba)
+```
+
+<style>
+#TOC {
+  color: #708090;
+  font-family: Arial;
+  font-size: 16px;
+  border-color: #708090;
+}
+h1.title {
+  color: #224DDE; 
+  font-family: Calibri;
+  font-size: 20px;
+}
+h4.author {
+  color: #708090;
+  font-family: Arial;
+}
+h4.date {
+  color: #708090;
+  font-family: Arial;
+}
+body {
+  color: #708090;
+  font-family: Arial;
+}
+pre {
+  color: #708090;
+}
+</style>
+
+## Dataset NBA
+El ejercicio propuesto consiste en la realización de un análisis sobre la relación entre los datos de los jugadores de la NBA y sus salarios, aplicando el fichero de datos `nba.csv`. A continuación, se presentan sus variables y un glosario para la comprensión de dicho dataset y el posterior desarrollo del erjercicio. El problema que plantea este ejercicio es: ¿Hay una fuerte relación entre los datos de los jugadores y sus salarios? y, si es así ¿Cuánta?
+### Variables
+Player
+Salary
+NBA_Country
+NBA_DraftNumber
+Age
+Tm
+G
+MPMP = Minutes Played
+PER
+TS%True Shooting Percentage (TS%) = 100(ORB(TMP/5)/(MP*(TORB+ODRB)), Where ORB = Offensive Rebounds,
+TMP = Team Minutes Played, MP = Minutes Played, TORB = Team Offensive Rebounds, ODRB = Opponents Defensive Rebounds
+3PAr
+FTr
+ORB%Offensive Rebound Percentage (ORB%) = 100(ORB(TMP/5)/(MP*(TORB+ODRB)), Where ORB=Offensive Rebounds,
+TMP = Team Minutes Played, MP=Minutes Played, TORB=Team Offensive Rebounds, ODRB=Opponents Defensive Rebounds
+DRB%
+TRB%
+AST%Assist Percentage (AST%) = 100A/(((MP/(TMP/5))TFG)-FG), Where A=Assists, MP=Minutes Played, TMP=Team Minutes Played, TFG=Team Field Goals, FG = Field Goals
+STL%
+BLK%
+TOV%Turnover Percentage (TOV%) = 100TO/(FGA+0.44FTA+TO), Where TO=Turnovers, FGA = Field Goals Attempted, FTA = Free Throws Attempted
+USG%Usage Rate (USG%) = 100((FGA+0.44FTA+TO)(TMP/5))/(MP(TFGA+0.44*TFTA+TTO)), Where FGA = Field-Goal Attempts, FTA = Free-Throw Attempts, TO=Turnovers, TMP = Team Minutes Played, MP = Minutes Played, TFGA = Team Field-Goal Attempts, TFTA = Team Free-Throw Attempts, TTO = Team Turnovers
+OWSOffensive Win Shares (OWS) = (PP-0.92LPPP(FGA+0.44FTA+TO))/(0.32LPPG*(TP/LP)), Where PP = Points Produced, LPPP = League Points Per Possession, FGA = Field-Goal Attempts, FTA = Free-Throw Attempts, TO = Turnovers, LPPG = League Points Per Game, TP = Team Pace, LP = League Pace
+DWS
+WS
+WS/48
+OBPM
+DBPM
+BPM
+VORP
+
+
+### Glosario
+PER – Player Efficiency Rating A measure of per-minute production standardized such that the league average is 15.
+TS% – True Shooting Percentage A measure of shooting efficiency that takes into account 2-point field goals, 3-point field goals, and free throws.
+3PAr – 3-Point Attempt Rate Percentage of FG Attempts from 3-Point Range
+FTr – Free Throw Attempt Rate Number of FT Attempts Per FG Attempt
+ORB% – Offensive Rebound Percentage An estimate of the percentage of available offensive rebounds a player grabbed while he was on the floor.
+DRB% – Defensive Rebound Percentage An estimate of the percentage of available defensive rebounds a player grabbed while he was on the floor.
+TRB% – Total Rebound Percentage An estimate of the percentage of available rebounds a player grabbed while he was on the floor.
+AST% – Assist Percentage An estimate of the percentage of teammate field goals a player assisted while he was on the floor.
+STL% – Steal Percentage An estimate of the percentage of opponent possessions that end with a steal by the player while he was on the floor.
+BLK% – Block Percentage An estimate of the percentage of opponent two-point field goal attempts blocked by the player while he was on the floor.
+TOV% – Turnover Percentage An estimate of turnovers committed per 100 plays.
+USG% – Usage Percentage An estimate of the percentage of team plays used by a player while he was on the floor.
+OWS – Offensive Win Shares An estimate of the number of wins contributed by a player due to his offense.
+DWS – Defensive Win Shares An estimate of the number of wins contributed by a player due to his defense.
+WS – Win Shares An estimate of the number of wins contributed by a player.
+WS/48 – Win Shares Per 48 Minutes An estimate of the number of wins contributed by a player per 48 minutes (league average is approximately .100)
+OBPM – Offensive Box Plus/Minus A box score estimate of the offensive points per 100 possessions a player contributed above a league-average player, translated to an average team.
+DBPM – Defensive Box Plus/Minus A box score estimate of the defensive points per 100 possessions a player contributed above a league-average player, translated to an average team.
+BPM – Box Plus/Minus A box score estimate of the points per 100 possessions a player contributed above a league-average player, translated to an average team.
+VORP – Value over Replacement Player A box score estimate of the points per 100 TEAM possessions that a player contributed above a replacement-level (-2.0) player, translated to an average team and prorated to an 82-game season.
+
+
+
+### 1. Datos
+Procedemos a realizar un breve análisis de la composición del Dataset `nba` para comprender el conjunto de datos que agrupa.
+```{r nba, echo = FALSE}
+head(datanba)
+
+str(datanba)
+```
+### 2. Limpieza de datos: Variables con datos de tipo factor y Datos Na
+En primer lugar, eliminamos las variables que contengan elementos de tipo factor para poder elaborar los modelos. Posteriormente, procedemos a realizar una observación de los datos nulos, su ubicación y su posterior eliminación a través de las observaciones ya que, en este caso al ser tan solo 3 observaciones no suponen un fuerte impacto en la elaboración del modelo, puesto que, como se ha observado previamente, hay un total de 485 observaciones. El nuevo data frame se llamará `nba`.
+```{r nba, echo = TRUE, results = 'hide'}
+any(is.na(datanba))
+sum(is.na(datanba))
+apply(is.na(datanba), 2, which)
+
+nba <- select(datanba, -'Player', -'NBA_Country', -'Tm')
+delete.na <- function(nba, n=0) {
+ nba[rowSums(is.na(nba)) <= n,]
+}
+nba1 <- delete.na(nba)
+```
+### 3. Modelo de regresión lineal
+A continuación, realizamos un modelo de regresión lineal con la variable dependiente `Salary`.
+```{r nba, echo = FALSE}
+lModel <- lm(formula = Salary ~ NBA_DraftNumber + Age + G + MP + PER + TS. + X3PAr + FTr + ORB. + DRB. + TRB. + AST. + STL. + BLK. + TOV. + USG. + OWS + DWS + WS + WS.48 + OBPM + DBPM + BPM + VORP, data = nba1)
+summary(lModel)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
